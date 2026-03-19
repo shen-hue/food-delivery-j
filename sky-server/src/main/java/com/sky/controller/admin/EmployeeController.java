@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -106,7 +107,7 @@ public class EmployeeController {
         return Result.success(pageResult);
     }
 
-    @GetMapping("/status/{status}")
+    @PostMapping("/status/{status}")
     @ApiOperation("修改员工状态")
     public Result getMethodName(@PathVariable Integer status, Long id){
         log.info("修改员工状态，参数为: {}, {}", status, id);
@@ -114,6 +115,19 @@ public class EmployeeController {
         return Result.success();
     }
     
+    @GetMapping("{id}")
+    @ApiOperation("根据id查询员工信息")
+    public Result<Employee> getMethodName(@PathVariable Long id) {
+        log.info("获取员工信息，参数为: {}", id);
+        Employee employee = employeeServiceImpl.getById(id);
+        return Result.success(employee);
+    }
     
-
+    @PutMapping
+    @ApiOperation("修改员工信息")
+    public Result update(@RequestBody EmployeeDTO employeeDTO) {
+        log.info("修改员工信息，参数为: {}", employeeDTO);
+        employeeServiceImpl.update(employeeDTO);
+        return Result.success();
+    }
 }
