@@ -12,7 +12,7 @@ import com.sky.enumeration.OperationType;
  * 自定义注解
  */
 
-@Target({ElementType.TYPE})
+@Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface AutoFill {
     OperationType value();
