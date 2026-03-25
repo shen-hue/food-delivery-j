@@ -14,5 +14,7 @@ public interface DishFlavorMapper {
 
     @Delete("delete from dish_flavor where dish_id = #{dishId}")
     void deleteByDishId(Long dishId);
-    
+
+    void deleteByDishIds(List<Long> ids);
+
 }
