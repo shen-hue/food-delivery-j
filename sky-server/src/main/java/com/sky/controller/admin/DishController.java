@@ -7,6 +7,7 @@ import com.sky.service.DishService;
 import com.sky.dto.DishPageQueryDTO;
 import com.sky.service.impl.DishServiceImpl;
 import com.sky.vo.DishVO;
+import com.sky.entity.Dish;
 
 import java.util.List;
 
@@ -82,5 +83,13 @@ public class DishController {
         dishServiceImpl.updateWithFlavor(dishDTO);
         return Result.success();
     }
+
+    @GetMapping("/list")
+    public Result<List<Dish>> list(Long categoryId) {
+        log.info("根据分类id查询菜品: {}", categoryId);
+        List<Dish> list = dishServiceImpl.list(categoryId);
+        return Result.success(list);
+    }
+    
     
 }
