@@ -54,7 +54,7 @@ public class DishController {
     @PostMapping
     @ApiOperation("新增菜品")
     public Result save(@RequestBody DishDTO dishDTO) {
-        log.info("新增菜品 {}\",dishDTO");
+        log.info("新增菜品 {}",dishDTO);
         dishService.saveWithFlavor(dishDTO);
 
         String key = "dish_" + dishDTO.getCategoryId();
