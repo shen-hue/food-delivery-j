@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.cache.annotation.CacheEvict;
 
 
 @RestController
@@ -44,6 +45,7 @@ public class SetmealController {
 
     @PostMapping
     @ApiOperation("新增套餐")
+    @CacheEvict(value = "setmealCache", key = "#setmealDTO.categoryId")
     public Result save(@RequestBody SetmealDTO setmealDTO) {
         log.info("新增套餐：{}", setmealDTO);
         setmealService.saveWithDish(setmealDTO);
@@ -60,6 +62,7 @@ public class SetmealController {
 
     @DeleteMapping
     @ApiOperation("批量删除套餐")
+    @CacheEvict(value = "setmealCache", allEntries = true)
     public Result delete(@RequestParam List<Long> ids) {
         log.info("批量删除套餐：{}", ids);
         setmealServiceImpl.deleteBatch(ids);
@@ -76,6 +79,7 @@ public class SetmealController {
 
     @PutMapping
     @ApiOperation("修改套餐")
+    @CacheEvict(value = "setmealCache", allEntries = true)
     public Result update(@RequestBody SetmealDTO setmealDTO) {
         log.info("修改套餐：{}", setmealDTO);
         setmealServiceImpl.update(setmealDTO);
@@ -84,6 +88,7 @@ public class SetmealController {
 
     @PostMapping("/status/{status}")
     @ApiOperation("修改套餐状态")
+    @CacheEvict(value = "setmealCache", allEntries = true)
     public Result startOrStop(@PathVariable Integer status, Long id) {
         log.info("修改套餐状态: {}, {}", status, id);
         setmealServiceImpl.startOrStop(status, id);
