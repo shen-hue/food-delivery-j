@@ -9,4 +9,5 @@ public interface ShoppingCartService {
     public void addShoppingCart(ShoppingCartDTO shoppingCartDTO);
     public List<ShoppingCart> showShoppingCart();
     public void cleanShoppingCart();
+    public void subShoppingCart(ShoppingCartDTO shoppingCartDTO);
 }
