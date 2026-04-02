@@ -4,6 +4,7 @@ import com.sky.dto.OrdersPaymentDTO;
 import com.sky.dto.OrdersSubmitDTO;
 import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderSubmitVO;
+import com.sky.result.PageResult;
 
 
 public interface OrderService {
@@ -20,4 +21,5 @@ public interface OrderService {
      * @param outTradeNo
      */
     void paySuccess(String outTradeNo);
+    PageResult pageQuery4User(int page, int pageSize, Integer status);
 }

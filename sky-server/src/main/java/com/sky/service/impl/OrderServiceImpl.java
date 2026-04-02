@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.sky.service.OrderService;
+import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.dto.OrdersPaymentDTO;
 import com.sky.dto.OrdersSubmitDTO;
 import com.sky.entity.AddressBook;
@@ -30,8 +31,12 @@ import com.sky.vo.OrderSubmitVO;
 import com.sky.entity.User;
 import com.sky.mapper.UserMapper;
 import com.sky.utils.WeChatPayUtil;
+import com.sky.vo.OrderVO;
+import com.sky.result.PageResult;
 
 import com.alibaba.fastjson.JSONObject;
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageHelper;
 
 
 @Service
@@ -147,5 +152,27 @@ public class OrderServiceImpl implements OrderService{
 
         orderMapper.update(orders);
     }
+
+    public PageResult pageQuery4User(int pageNum, int pageSize, Integer status) {
+        Long userId = BaseContext.getCurrentId();
+        PageHelper.startPage(pageNum, pageSize);
+
+        OrdersPageQueryDTO ordersPageQueryDTO = new OrdersPageQueryDTO();
+        ordersPageQueryDTO.setUserId(userId);
+        ordersPageQueryDTO.setStatus(status);
+        Page<Orders> page = orderMapper.pageQuery(ordersPageQueryDTO);
+
+        List<OrderVO> list = new ArrayList<>();
+        for(Orders orders : page) {
+            Long orderId = orders.getId();
+            List<OrderDetail> orderDetailList = orderDetailMapper.getByOrderId(orderId);
+            OrderVO orderVO = new OrderVO();
+            BeanUtils.copyProperties(orders, orderVO);
+            orderVO.setOrderDetailList(orderDetailList);
+            list.add(orderVO);
+        }
+        return new PageResult(page.getTotal(), list);
+    }
+
 
 }
