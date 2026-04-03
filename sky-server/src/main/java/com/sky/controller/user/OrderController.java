@@ -13,12 +13,16 @@ import io.swagger.annotations.Api;
 
 import com.sky.dto.OrdersPaymentDTO;
 import com.sky.dto.OrdersSubmitDTO;
+import com.sky.entity.Orders;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.OrderService;
 import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderSubmitVO;
+import com.sky.vo.OrderVO;
+
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 
@@ -62,5 +66,9 @@ public class OrderController {
         return Result.success(pageResult);
     }
     
-
+    @GetMapping("/orderDetail/{id}")
+    public Result<OrderVO> details(@PathVariable("id") Long id){
+        OrderVO orderVO = orderService.details(id);
+        return Result.success(orderVO);
+    }
 }

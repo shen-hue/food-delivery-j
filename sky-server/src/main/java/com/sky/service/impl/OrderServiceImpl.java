@@ -4,7 +4,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -35,6 +34,7 @@ import com.sky.vo.OrderVO;
 import com.sky.result.PageResult;
 
 import com.alibaba.fastjson.JSONObject;
+import com.aliyuncs.ecs.model.v20140526.AttachKeyPairResponse.Result;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 
@@ -174,5 +174,14 @@ public class OrderServiceImpl implements OrderService{
         return new PageResult(page.getTotal(), list);
     }
 
+    public OrderVO details(Long id) {
+        Orders orders = orderMapper.getById(id);
+        List<OrderDetail> orderDetailList = orderDetailMapper.getByOrderId(id);
+
+        OrderVO orderVO = new OrderVO();
+        BeanUtils.copyProperties(orders, orderVO);
+        orderVO.setOrderDetailList(orderDetailList);
+        return orderVO;
+    }
 
 }
