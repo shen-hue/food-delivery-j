@@ -24,4 +24,5 @@ public interface OrderService {
     void paySuccess(String outTradeNo);
     PageResult pageQuery4User(int page, int pageSize, Integer status);
     OrderVO details(Long id);
+    void userCancelById(Long id) throws Exception;
 }
