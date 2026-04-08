@@ -8,6 +8,8 @@ import com.sky.dto.OrdersPageQueryDTO;
 
 import com.github.pagehelper.Page;
 
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Mapper
 public interface OrderMapper {
@@ -45,4 +47,7 @@ public interface OrderMapper {
      */
     @Select("select count(id) from orders where status = #{status}")
     Integer countByStatus(Integer status);
+    
+    @Select("select * from orders where status = #{status} and order_time < #{time}")
+    List<Orders> getByStatusAndOrderTimeLT(Integer status, LocalDateTime time);
 }
