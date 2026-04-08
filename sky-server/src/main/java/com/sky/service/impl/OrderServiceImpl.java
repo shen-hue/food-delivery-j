@@ -4,6 +4,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -13,6 +15,7 @@ import java.util.stream.Collectors;
 import com.sky.service.OrderService;
 import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.dto.OrdersPaymentDTO;
+import com.sky.dto.OrdersRejectionDTO;
 import com.sky.dto.OrdersSubmitDTO;
 import com.sky.entity.AddressBook;
 import com.sky.entity.Orders;
@@ -27,20 +30,25 @@ import com.sky.mapper.ShoppingCartMapper;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
 import com.sky.vo.OrderPaymentVO;
+import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.entity.User;
 import com.sky.mapper.UserMapper;
 import com.sky.utils.WeChatPayUtil;
 import com.sky.vo.OrderVO;
 import com.sky.result.PageResult;
+import com.sky.dto.OrdersCancelDTO;
+import com.sky.dto.OrdersConfirmDTO;
 
 import com.alibaba.fastjson.JSONObject;
-import com.aliyuncs.ecs.model.v20140526.AttachKeyPairResponse.Result;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 
+import lombok.extern.slf4j.Slf4j;
+
 
 @Service
+@Slf4j
 public class OrderServiceImpl implements OrderService{
     @Autowired
     private OrderMapper orderMapper;
@@ -235,4 +243,135 @@ public class OrderServiceImpl implements OrderService{
         shoppingCartMapper.insertBatch(shoppingCartList);
     }
 
+    public PageResult conditionSearch(OrdersPageQueryDTO ordersPageQueryDTO) {
+        PageHelper.startPage(ordersPageQueryDTO.getPage(), ordersPageQueryDTO.getPageSize());
+        Page<Orders> page = orderMapper.pageQuery(ordersPageQueryDTO);
+
+        List<OrderVO> orderVOList = getOrderVOList(page);
+        
+        return new PageResult(page.getTotal(), orderVOList);
+    }
+
+    public List<OrderVO> getOrderVOList(Page<Orders> page) {
+        List<OrderVO> orderVOList = new ArrayList<>();
+
+        List<Orders> ordersList = page.getResult();
+        if(!CollectionUtils.isEmpty(ordersList)){
+            for (Orders orders : ordersList) {
+                OrderVO orderVO = new OrderVO();
+                BeanUtils.copyProperties(orders, orderVO);
+                String orderDishes = getOrderDishesStr(orders);
+                orderVO.setOrderDishes(orderDishes);
+                orderVOList.add(orderVO);
+            }
+        }
+        return orderVOList;
+    }
+
+    public String getOrderDishesStr(Orders orders) {
+        List<OrderDetail> orderDetailList = orderDetailMapper.getByOrderId(orders.getId());
+        List<String> orderDishList = orderDetailList.stream().map(x -> {
+            return x.getName() + "*" + x.getNumber() + ";";
+        }).collect(Collectors.toList());
+        return String.join("", orderDishList);
+    }
+        
+    public OrderStatisticsVO statistics() {
+        Integer toBeConfirmed = orderMapper.countByStatus(Orders.TO_BE_CONFIRMED);
+        Integer confirmed = orderMapper.countByStatus(Orders.CONFIRMED);
+        Integer deliveryInProgress = orderMapper.countByStatus(Orders.DELIVERY_IN_PROGRESS);
+
+        OrderStatisticsVO orderStatisticsVO = new OrderStatisticsVO();
+        orderStatisticsVO.setToBeConfirmed(toBeConfirmed);
+        orderStatisticsVO.setConfirmed(confirmed);
+        orderStatisticsVO.setDeliveryInProgress(deliveryInProgress);
+
+        return orderStatisticsVO;
+    }
+
+    public void confirm(OrdersConfirmDTO ordersConfirmDTO) {
+        Orders orders = Orders.builder()
+                .id(ordersConfirmDTO.getId())
+                .status(Orders.CONFIRMED)
+                .build();
+        orderMapper.update(orders);
+    }
+
+    public void rejection(OrdersRejectionDTO ordersRejectionDTO) throws Exception{
+        Orders ordersDB = orderMapper.getById(ordersRejectionDTO.getId());
+
+        //订单只有存在且状态为2（待接单）才可以拒单
+        if (ordersDB == null || !ordersDB.getStatus().equals(Orders.TO_BE_CONFIRMED)) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+        
+        Integer payStatus = ordersDB.getPayStatus();
+        if (payStatus.equals(Orders.PAID)) {
+            String refund = weChatPayUtil.refund(
+                ordersDB.getNumber(),
+                ordersDB.getNumber(),
+                new BigDecimal(0.01),
+                new BigDecimal(0.01));
+            log.info("申请退款：{}", refund);
+        }
+
+        Orders orders = Orders.builder()
+                .id(ordersRejectionDTO.getId())
+                .status(Orders.CANCELLED)
+                .rejectionReason(ordersRejectionDTO.getRejectionReason())
+                .cancelTime(LocalDateTime.now())
+                .build();
+        orderMapper.update(orders);
+    }
+
+    public void cancel(OrdersCancelDTO ordersCancelDTO) throws Exception{
+        Orders ordersDB = orderMapper.getById(ordersCancelDTO.getId());
+
+        Integer payStatus = ordersDB.getPayStatus();
+        if (payStatus.equals(Orders.PAID) ) {
+            String refund = weChatPayUtil.refund(
+                ordersDB.getNumber(),
+                ordersDB.getNumber(),
+                new BigDecimal(0.01),
+                new BigDecimal(0.01));
+            log.info("申请退款：{}", refund);
+        }
+
+        Orders orders = Orders.builder()
+                .id(ordersCancelDTO.getId())
+                .status(Orders.CANCELLED)
+                .cancelReason(ordersCancelDTO.getCancelReason())
+                .cancelTime(LocalDateTime.now())
+                .build();
+        orderMapper.update(orders);
+    }
+
+    public void delivery(Long id) {
+        Orders ordersDB = orderMapper.getById(id);
+
+        if (ordersDB == null || !ordersDB.getStatus().equals(Orders.CONFIRMED)) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+
+        Orders orders = Orders.builder()
+                .id(ordersDB.getId())
+                .status(Orders.DELIVERY_IN_PROGRESS)
+                .build();
+        orderMapper.update(orders);
+    }
+
+    public void complete(Long id) {
+        Orders ordersDB = orderMapper.getById(id);
+
+        if (ordersDB == null || !ordersDB.getStatus().equals(Orders.DELIVERY_IN_PROGRESS)) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+
+        Orders orders = Orders.builder()
+                .id(ordersDB.getId())
+                .status(Orders.COMPLETED)
+                .deliveryTime(LocalDateTime.now())
+                .build();
+        orderMapper.update(orders);
+    }
 }
