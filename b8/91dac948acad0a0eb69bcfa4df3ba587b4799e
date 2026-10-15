@@ -1,0 +1,18 @@
+.gitignore
+  h_60e332e94dba55 6-9
+sky-server/src/main/resources/application-dev.yml
+  h_60e332e94dba55 1-20
+sky-server/src/main/resources/application.yml
+  h_60e332e94dba55 1-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b891dac948acad0a0eb69bcfa4df3ba587b4799e",
+  "prompts": {},
+  "humans": {
+    "h_60e332e94dba55": {
+      "author": "shen-hue <shenyelideyingzi@gmail.com>"
+    }
+  }
+}
